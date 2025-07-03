@@ -6,12 +6,12 @@ import "dotenv/config";
 const app = express();
 const port = 3000;
 
-const db = new pg.Client({
+const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-db.connect();
+await pool.connect();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -19,7 +19,7 @@ app.use(express.static("public"));
 let items = [];
 
 async function itemlist() {
-  const result = await db.query("SELECT * FROM items ORDER BY id ASC ");
+  const result = await pool.query("SELECT * FROM items ORDER BY id ASC ");
   items = result.rows;
   console.log(items);
   return items;
@@ -34,20 +34,20 @@ app.get("/", async(req, res) => {
 
 app.post("/add", async(req, res) => {
   const item = req.body.newItem;
-  await db.query("INSERT INTO items (title) VALUES ($1)",[item]);
+  await pool.query("INSERT INTO items (title) VALUES ($1)",[item]);
   res.redirect("/");
 });
 
 app.post("/edit", async(req, res) => {
   const itemid = req.body.updatedItemId;
   const item = req.body.updatedItemTitle;
-  await db.query("UPDATE items SET title=($1) WHERE id=($2);",[item, itemid]);
+  await pool.query("UPDATE items SET title=($1) WHERE id=($2);",[item, itemid]);
   res.redirect("/");
 });
 
 app.post("/delete", async(req, res) => {
   const itemid = req.body.deleteItemId;
-  await db.query("DELETE FROM items WHERE id=($1)",[itemid]);
+  await pool.query("DELETE FROM items WHERE id=($1)",[itemid]);
   res.redirect("/");
 });
 
